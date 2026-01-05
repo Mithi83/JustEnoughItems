@@ -126,6 +126,55 @@ public class GhostIngredientDragManager {
 		this.hoveredTargetAreas = List.of();
 	}
 
+	private <T extends Screen, V> boolean quickMoveInternal(T currentScreen, IDraggableIngredientInternal<V> clicked, UserInput input) {
+		List<IGhostIngredientHandler<T>> handlers = screenHelper.getGhostIngredientHandlers(currentScreen);
+		ITypedIngredient<V> ingredient2 = clicked.getTypedIngredient();
+
+		List<IGhostIngredientHandler<T>> handlerList = new ArrayList<>();
+		for (IGhostIngredientHandler<T> handler : handlers) {
+			ITypedIngredient<V> ingredient = clicked.getTypedIngredient();
+			List<IGhostIngredientHandler.Target<V>> targets = handler.getTargetsTyped(currentScreen, ingredient, false);
+			if (!targets.isEmpty()) {
+				handlerList.add(handler);
+			}
+		}
+
+		if (handlerList.isEmpty()) {
+			return false;
+		}
+
+		for (IGhostIngredientHandler<T> handler : handlerList) {
+			ITypedIngredient<V> ingredient = clicked.getTypedIngredient();
+			handler.quickMove(currentScreen, ingredient);
+		}
+
+		return true;
+	}
+
+	private <T extends Screen> boolean quickMove2(T screen, UserInput input) {
+		Minecraft minecraft = Minecraft.getInstance();
+		LocalPlayer player = minecraft.player;
+		if (player == null) {
+			return false;
+		}
+
+		return source.getDraggableIngredientUnderMouse(input.getMouseX(), input.getMouseY())
+				.findFirst()
+				.flatMap(clicked -> {
+					ItemStack mouseItem = player.containerMenu.getCarried();
+					if (mouseItem.isEmpty() &&
+							quickMoveInternal(screen, clicked, input)) {
+						return Optional.of(true);
+					}
+					return Optional.empty();
+				})
+				.isPresent();
+	}
+
+	public <T extends Screen> boolean quickMove(T screen, UserInput input) {
+		return this.quickMove2(screen, input);
+	}
+
 	private <T extends Screen, V> boolean handleClickGhostIngredient(T currentScreen, IDraggableIngredientInternal<V> clicked, UserInput input) {
 		List<IGhostIngredientHandler<T>> handlers = screenHelper.getGhostIngredientHandlers(currentScreen);
 

@@ -287,7 +287,7 @@ public class IngredientGridWithNavigation implements IRecipeFocusSource {
 	public IUserInputHandler createInputHandler() {
 		return new CombinedInputHandler(
 			this.debugName,
-			new UserInputHandler(this.pageDelegate, this.ingredientGrid, this.toggleState, this.clientConfig, this.commandUtil, this.ingredientManager, this::isMouseOver),
+			new UserInputHandler(this.pageDelegate, this.ingredientGrid, this.toggleState, this.clientConfig, this.commandUtil, this.ingredientManager, this::isMouseOver, this.ghostIngredientDragManager),
 			this.ingredientGrid.getInputHandler(),
 			this.navigation.createInputHandler()
 		);
@@ -425,6 +425,7 @@ public class IngredientGridWithNavigation implements IRecipeFocusSource {
 		private final IMouseOverable mouseOverable;
 		private final CommandUtil commandUtil;
 		private final IIngredientManager ingredientManager;
+		private final GhostIngredientDragManager ghostIngredientDragManager;
 
 		private UserInputHandler(
 			IngredientGridPaged paged,
@@ -433,7 +434,8 @@ public class IngredientGridWithNavigation implements IRecipeFocusSource {
 			IClientConfig clientConfig,
 			CommandUtil commandUtil,
 			IIngredientManager ingredientManager,
-			IMouseOverable mouseOverable
+			IMouseOverable mouseOverable,
+			GhostIngredientDragManager ghostIngredientDragManager
 		) {
 			this.paged = paged;
 			this.focusSource = focusSource;
@@ -442,6 +444,7 @@ public class IngredientGridWithNavigation implements IRecipeFocusSource {
 			this.mouseOverable = mouseOverable;
 			this.commandUtil = commandUtil;
 			this.ingredientManager = ingredientManager;
+			this.ghostIngredientDragManager = ghostIngredientDragManager;
 		}
 
 		@Override
@@ -471,6 +474,12 @@ public class IngredientGridWithNavigation implements IRecipeFocusSource {
 			if (input.is(keyBindings.getPreviousPage())) {
 				this.paged.previousPage();
 				return Optional.of(this);
+			}
+
+			if (input.is(keyBindings.getTransferRecipeBookmark())) {
+				if (this.ghostIngredientDragManager.quickMove(screen, input)) {
+					return Optional.of(this);
+				}
 			}
 
 			return checkHotbarKeys(screen, input);
